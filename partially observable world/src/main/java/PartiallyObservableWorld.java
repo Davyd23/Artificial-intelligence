@@ -1,3 +1,7 @@
+import HelpClasses.MoveType;
+import HelpClasses.SearchClearPath;
+import HelpClasses.SearchUnknown;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -7,12 +11,33 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 /*
- * Maze Escape is a popular 1 player game where a bot is trapped in a maze and is expected to find its way out.
+ * Maze Escape is a popular 1 player game where a bot is trapped in a maze and is expected to find
+ * its way out.
  * Possible Moves: UP, DOWN, RIGHT,LEFT 
  */
 public class PartiallyObservableWorld {
-	
-	public String nextMove(char currentView[][]){ // return a string which indicates direction
+
+	private char path='-';
+    private char unknown='?';
+    private char player='b';
+	private ArrayList<String> world;
+    private SearchUnknown searchUnknown;
+	private SearchClearPath searchClearPath;
+    private String lastMove="";
+
+    public PartiallyObservableWorld() {
+        this.searchUnknown =new SearchUnknown(unknown,player);
+		this.searchClearPath=new SearchClearPath(path,player);
+    }
+
+    public PartiallyObservableWorld(char unknown, char player) {
+        this.unknown = unknown;
+        this.player = player;
+        this.searchUnknown =new SearchUnknown(unknown,player);
+		this.searchClearPath=new SearchClearPath(path,player);
+    }
+
+    public String nextMove(char currentView[][]){ // return a string which indicates direction
 		
 		ArrayList<String> data=null;
 		
@@ -30,8 +55,12 @@ public class PartiallyObservableWorld {
 			System.out.println("Error: "+e.getMessage());
 			e.printStackTrace();
 		}
-		
-		ArrayList<String> world=createWorld(data, currentView);
+		if(data!=null){
+		    lastMove=data.get(data.size()-1);
+            data.remove(data.size()-1);
+        }
+
+		world=createWorld(data, currentView);
 		
 		String move="";
 		
@@ -41,7 +70,7 @@ public class PartiallyObservableWorld {
 			move=moveDecision(world);
 		}
 		
-		world.set(world.size()-1,move);
+		world.add(move);
 		
 		try(PrintWriter writer = new PrintWriter("maze.txt","UTF-8")){
 			for(String s:world){
@@ -51,7 +80,7 @@ public class PartiallyObservableWorld {
 			e.printStackTrace();
 		}
 		
-		afisare(world);
+		//afisare(world);
 		
 		return move;
 		
@@ -63,37 +92,37 @@ public class PartiallyObservableWorld {
 			for(char[] c:currentView){
 				view.add(String.valueOf(c));
 			}
-			view.add("so it fallows what I implemented"); //will be rewriten
+			/*view.add("so it fallows what I implemented"); //will be rewriten*/
 			return view; // if data is null => first iteration, nothing to check
 		}
 		
-		for(int i=0;i<data.size()-1;i++){ // last element is the move
+		for(int i=0;i<data.size();i++){
 			
 			String s=data.get(i);
 			if(s.contains("b")){
 				
-				if(MoveType.UP.toString().equals(data.get(data.size()-1))){
+				if(MoveType.UP.toString().equals(lastMove) ){
 					
 					if(i<2) data=addRow(data,currentView,i,0,i-1);
 					else data=rowMove(data, currentView, i, true);
 					
-				}else if(MoveType.DOWN.toString().equals(data.get(data.size()-1))){
+				}else if(MoveType.DOWN.toString().equals(lastMove)){
 					
-					if(i>=data.size()-1-2) {
+					if(i>=data.size()-2) {
 						data=addRow(data,currentView,i,i+2,i+1);
 					}
 					else {
 						data=rowMove(data, currentView, i, false);
 					}
 					
-				}else if(MoveType.RIGHT.toString().equals(data.get(data.size()-1))){
+				}else if(MoveType.RIGHT.toString().equals(lastMove)){
 					
 					int index=s.indexOf('b');
 					if(index>s.length()-3) data=addColumn(data, currentView, i, false);
 					else data=columnMove(data, currentView, i, false);
 					
 					
-				}else if(MoveType.LEFT.toString().equals(data.get(data.size()-1))){
+				}else if(MoveType.LEFT.toString().equals(lastMove)){
 					
 					int index=s.indexOf('b');
 					if(index<2) data=addColumn(data, currentView, i, true);
@@ -181,13 +210,14 @@ public class PartiallyObservableWorld {
 	
 	public ArrayList<String> addColumn(ArrayList<String> data,char[][] currentView, int index, boolean left){
 		
-		for(int i=0;i<data.size()-1;i++){
+		for(int i=0;i<data.size();i++){
 			if(left)data.set(i,"?"+ data.get(i));
 			else data.set(i, data.get(i)+"?");
 		}
 		
 		return columnMove(data, currentView, index, left);
 	}
+
 	public ArrayList<String> columnMove(ArrayList<String> data,char[][] currentView, int index, boolean left){
 		
 		int playerLocation=data.get(index).indexOf('b');
@@ -214,51 +244,16 @@ public class PartiallyObservableWorld {
 		return data;
 	}
 	
-	public String moveDecision(ArrayList<String> world){  //implement search algorithm
-		int playerRow=0;
-		for(int i=0;i<world.size()-1;i++){
-			if(world.get(i).contains("b")){
-				playerRow=i;
-				break;
-			}
-		}
-		
-		int playerLocation=world.get(playerRow).indexOf("b");
-		String move="sdfbsdf";
-		
-		boolean searchMove=true;
-		while(searchMove){
-			int random=(int)Math.floor(Math.random()*4);
-			
-			switch(random){
-			case 0:String s=world.get(playerRow-1);
-				if(s.charAt(playerLocation)!='#') {
-					searchMove=false;
-					move=MoveType.UP.toString();
-				}
-				break;
-			case 1:s=world.get(playerRow);
-				if(s.charAt(playerLocation-1)!='#') {
-					searchMove=false;
-					move=MoveType.LEFT.toString();
-				}
-				break;
-			case 2:s=world.get(playerRow+1);
-				if(s.charAt(playerLocation)!='#') {
-					searchMove=false;
-					move=MoveType.DOWN.toString();
-				}
-				break;
-			case 3:s=world.get(playerRow);
-				if(s.charAt(playerLocation+1)!='#') {
-					searchMove=false;
-					move=MoveType.RIGHT.toString();
-				}
-				break;
-			}
-		}
-		
-		return move;
+	public String moveDecision(ArrayList<String> world){  //implement searchUnknown algorithm
+
+        if(containsSearch(world)){
+        	searchClearPath.clearMoves();// so we don't have any more moves left
+            return searchUnknown.nextMove(world);
+        }
+
+        searchUnknown.clearMoves(); // so we don't have any more moves left
+
+		return searchClearPath.nextMove(world);
 	}
 	
 	public boolean containsExit(char[][] view){
@@ -267,7 +262,16 @@ public class PartiallyObservableWorld {
 		}
 		return false;
 	}
-	
+
+	public boolean containsSearch(ArrayList<String> world){
+	    for(String s:world){
+	        if(s.contains(String.valueOf(unknown) ) ){
+	            return true;
+            }
+        }
+        return false;
+    }
+
 	public String moveToExit(char[][] view){
 		
 		for(int i=0;i<view.length;i++){
@@ -299,5 +303,11 @@ public class PartiallyObservableWorld {
 	public void afisare(ArrayList<String> list){
 		for(String s:list)
 			System.out.println(s);
+	}
+
+	public ArrayList<String> getWorld() {
+		if(!world.isEmpty())
+			world.remove(world.size()-1);
+		return world;
 	}
 }

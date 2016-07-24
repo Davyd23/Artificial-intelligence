@@ -1,17 +1,17 @@
-import static org.junit.Assert.*;
-
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
+import HelpClasses.MoveType;
+import Visual.Visual;
 import org.junit.Test;
 
 public class PartiallyObservableWorldTest {
 
 	@Test
 	public void addRowTestAddsUp() {
-		ArrayList<String> data=new ArrayList<>();
+		ArrayList<String> data=new ArrayList<String>();
 		data.add("#######");
 		data.add("#--#-b#");
 		data.add("#--#--#");
@@ -163,7 +163,9 @@ public class PartiallyObservableWorldTest {
 			"#-----#".toCharArray(),
 			"#######".toCharArray()
 			};
-			
+
+		Visual frame=new Visual(world.length,world[0].length);
+
 		int playerX=5,playerY=1;
 			
 		char[][] currentView=createCurrentView(world, playerX, playerY);	
@@ -172,7 +174,9 @@ public class PartiallyObservableWorldTest {
 		
 		while(true){
 			String move=p.nextMove(currentView);
-			
+
+			frame.update(p.getWorld());
+
 			if(playerX==1 && playerY==4) break;
 			
 			if(move.equals(MoveType.UP.toString()))playerY--;
@@ -185,11 +189,15 @@ public class PartiallyObservableWorldTest {
 			}catch(InterruptedException ex){
 				ex.printStackTrace();
 			}
-			
-			
-			
+
 			currentView=createCurrentView(world, playerX, playerY);	
 		}
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
 		
 	}
 	
